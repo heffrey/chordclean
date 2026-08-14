@@ -1,0 +1,16 @@
+name = "chordclean"
+compatibility_date = "2026-08-14"
+
+# Static assets only -- there is no Worker script. Every PDF is parsed in the
+# visitor's own browser under Pyodide, so the origin never receives an upload
+# and there is nothing to store, log, or bill per request.
+[assets]
+directory = "./public"
+# Deliberately NOT single-page-application: that mode answers a missing asset
+# with index.html and a 200, so a runtime file that failed to ship arrives at
+# the module worker as HTML and dies on a parse error instead of a 404.
+not_found_handling = "none"
+
+[[routes]]
+pattern = "chordclean.com"
+custom_domain = true

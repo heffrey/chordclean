@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>chordclean — tab PDFs, stripped to chords over lyrics</title>
+<meta name="description" content="Drop a tab-site PDF and get back just the chords over the lyrics — a clean lead sheet to play or sing from. Runs entirely in your browser; nothing is uploaded.">
+<link rel="stylesheet" href="styles.css">
+<!-- Deliberately not a guitar: the source PDFs come from tab sites, but a
+     chords-over-lyrics lead sheet is as much for piano and voice. -->
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>🎼</text></svg>">
+</head>
+<body>
+
+<header>
+  <h1>chordclean</h1>
+  <p class="tagline">
+    Tab-site PDFs, stripped down to chords over lyrics — a lead sheet for
+    piano, voice, or guitar.
+  </p>
+</header>
+
+<main>
+  <section id="intake">
+    <div id="drop" class="dropzone" tabindex="0" role="button"
+         aria-label="Choose a PDF, or drop one here">
+      <p class="drop-main">Drop a tab PDF here</p>
+      <p class="drop-sub">or <span class="link">choose a file</span></p>
+      <input type="file" id="file" accept="application/pdf,.pdf" hidden>
+    </div>
+    <p id="status" class="status" role="status" aria-live="polite"></p>
+  </section>
+
+  <section id="output" hidden>
+    <div class="toolbar">
+      <span id="songname" class="songname"></span>
+      <span class="spacer"></span>
+      <button type="button" id="copy">Copy</button>
+      <button type="button" id="download">Download .txt</button>
+      <button type="button" id="again">New file</button>
+    </div>
+    <pre id="sheet" class="sheet" tabindex="0"></pre>
+  </section>
+</main>
+
+<footer>
+  <p>
+    Everything happens in your browser — your PDF is never uploaded, stored,
+    or logged. Nothing is kept when you close the tab.
+  </p>
+  <p class="fine">
+    Provided as-is, with absolutely no warranty. Bring your own PDF; chordclean
+    only reformats a file you already have.
+  </p>
+  <!-- A plain link on purpose. The Ko-fi embed widget is an iframe plus
+       third-party JS, which would mean widening the CSP to allow exactly the
+       kind of script this site otherwise refuses to run. -->
+  <p class="support">
+    If chordclean saved you some typing,
+    <a href="https://ko-fi.com/jeffwhi"
+       target="_blank" rel="noopener noreferrer">buy me a coffee<span aria-hidden="true"> ↗</span></a>.
+  </p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

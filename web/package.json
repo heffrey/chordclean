@@ -1,0 +1,17 @@
+{
+  "name": "chordclean-web",
+  "private": true,
+  "version": "1.0.0",
+  "description": "chordclean.com -- browser-side tab PDF cleaner",
+  "scripts": {
+    "sync": "cp ../chordclean.py public/chordclean.py",
+    "predev": "npm run sync && npm run build:runtime",
+    "dev": "wrangler dev",
+    "predeploy": "npm run sync && npm run build:runtime",
+    "deploy": "wrangler deploy",
+    "build:runtime": "node scripts/build-runtime.mjs"
+  },
+  "devDependencies": {
+    "pyodide": "^314.0.3"
+  }
+}

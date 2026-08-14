@@ -1,0 +1,4 @@
+public/chordclean.py
+public/pyodide/
+node_modules/
+.wrangler/

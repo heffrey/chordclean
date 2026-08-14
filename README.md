@@ -13,6 +13,13 @@ above the third syllable.
 
 It also drops the page furniture the site prints around the tab.
 
+What comes out is a lead sheet, so it is as useful at a piano or for singing as
+it is with a guitar in your hands.
+
+There is a hosted version at **<https://chordclean.com>** if you would rather
+not install anything. It runs this same script in your browser; the PDF is
+never uploaded.
+
 ## Install
 
 pdfplumber is the only dependency. On a Homebrew Python you need a venv, since
@@ -75,3 +82,41 @@ fingering diagrams and their explanatory prose in one move.
   to lyrics; `--debug` shows you.
 - A chord line made entirely of words that are also English (`A`, `Am`, `Add`)
   can be misread. `AMBIGUOUS` holds the current exceptions.
+
+## The website
+
+`web/` holds [chordclean.com](https://chordclean.com). There is no server and no
+API: `chordclean.py` is served as a static file and run **unmodified** in the
+visitor's browser by [Pyodide](https://pyodide.org), inside a Web Worker. The
+PDF never leaves the machine it was dropped on, so nothing is uploaded, stored,
+or logged, and there is nothing to bill per request.
+
+Two details make that work. `pdfplumber` declares `pypdfium2` and Pillow, but
+both are reachable only through its `to_image()` path, which this script never
+calls — `pypdfium2` has no Emscripten wheel at all, so the worker stubs both
+out. And the Pyodide runtime is self-hosted rather than pulled from a CDN,
+which keeps PyPI out of the request path and lets the site run under a
+same-origin CSP.
+
+```
+cd web
+npm install
+npm run dev            # local, at http://localhost:8788
+npm run deploy         # to Cloudflare
+```
+
+Both commands first copy `chordclean.py` in from the repo root and assemble the
+runtime under `public/pyodide/` (~22MB, gitignored), so the site cannot drift
+from the CLI tool.
+
+Output is verified by hashing: the browser and a local venv produce
+byte-identical text for the same PDF.
+
+## Support
+
+chordclean is free. If it saved you some typing,
+[buy me a coffee](https://ko-fi.com/jeffwhi).
+
+## License
+
+MIT — see [LICENSE](LICENSE).

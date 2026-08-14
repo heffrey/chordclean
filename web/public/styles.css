@@ -1,0 +1,156 @@
+:root {
+  --bg: #fbfaf7;
+  --panel: #ffffff;
+  --ink: #1c1b19;
+  --muted: #6d6a63;
+  --line: #e4e0d8;
+  --accent: #b2451f;
+  --accent-soft: #f4ece7;
+  --section: #3f6b5c;
+  --focus: #2f6fd0;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #17161a;
+    --panel: #1f1e23;
+    --ink: #ece9e3;
+    --muted: #97928a;
+    --line: #333138;
+    --accent: #ef9366;
+    --accent-soft: #2b2226;
+    --section: #7fbfa5;
+    --focus: #79aaf5;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 2.5rem 1.25rem 4rem;
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+header, main, footer { max-width: 46rem; margin: 0 auto; }
+
+h1 {
+  margin: 0;
+  font-size: 1.9rem;
+  letter-spacing: -0.02em;
+  font-weight: 650;
+}
+
+.tagline { margin: 0.3rem 0 2rem; color: var(--muted); }
+
+/* ---------- intake ---------- */
+
+.dropzone {
+  border: 2px dashed var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+  padding: 3.25rem 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.dropzone:hover, .dropzone:focus-visible { border-color: var(--accent); outline: none; }
+.dropzone.over { border-color: var(--accent); background: var(--accent-soft); }
+.dropzone.busy { cursor: progress; opacity: 0.6; pointer-events: none; }
+
+.drop-main { margin: 0; font-size: 1.15rem; font-weight: 550; }
+.drop-sub { margin: 0.35rem 0 0; color: var(--muted); font-size: 0.95rem; }
+.link { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+
+.status {
+  min-height: 1.5rem;
+  margin: 0.9rem 0 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+  text-align: center;
+}
+
+.status.error { color: var(--accent); }
+
+/* ---------- output ---------- */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.spacer { flex: 1; }
+
+.songname {
+  font-weight: 550;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 22rem;
+}
+
+button {
+  font: inherit;
+  font-size: 0.88rem;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+button:hover { border-color: var(--accent); color: var(--accent); }
+button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.sheet {
+  margin: 0;
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  font-family: var(--mono);
+  font-size: 13.5px;
+  line-height: 1.45;
+  overflow-x: auto;
+  tab-size: 4;
+}
+
+/* Each line is its own element so it can be coloured by kind, but the
+   whitespace is what aligns a chord over its syllable -- never collapse it. */
+.sheet .ln { white-space: pre; }
+.sheet .chord { color: var(--accent); font-weight: 600; }
+.sheet .section { color: var(--section); font-weight: 650; }
+.sheet .blank { height: 0.7em; }
+
+/* ---------- footer ---------- */
+
+footer {
+  margin-top: 3rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+footer p { margin: 0 0 0.5rem; }
+.fine { opacity: 0.8; }
+
+.support { margin-top: 0.9rem; }
+
+footer a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+footer a:hover { text-decoration-thickness: 2px; }
+footer a:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
