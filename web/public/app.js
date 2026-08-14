@@ -36,7 +36,7 @@
     fatal = message;
     setBusy(false);
     clearPending();
-    fail(`chordclean couldn't start — ${message}`);
+    fail(`chordclean couldn't start: ${message}`);
   }
 
   // A hung parse cannot be cancelled from inside Python, so the only real
@@ -66,7 +66,7 @@
       }
       // Show boot progress even before a file is chosen: it is a ~10MB
       // download, and silence for ten seconds reads as a broken page.
-      setStatus(msg.detail ? `Warming up — ${msg.detail}…` : "Warming up…");
+      setStatus(msg.detail ? `Warming up: ${msg.detail}…` : "Warming up…");
       return;
     }
     if (msg.type === "fatal") { die(msg.message); return; }
@@ -75,7 +75,7 @@
     if (msg.type === "error") {
       clearPending();
       setBusy(false);
-      fail(`Couldn't read that PDF — ${msg.message}`);
+      fail(`Couldn't read that PDF: ${msg.message}`);
       return;
     }
 
@@ -137,12 +137,12 @@
   function handle(file) {
     if (!file) return;
     if (pending) return;
-    if (fatal) { fail(`chordclean couldn't start — ${fatal}`); return; }
+    if (fatal) { fail(`chordclean couldn't start: ${fatal}`); return; }
 
     const looksPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
     if (!looksPdf) { fail("That's not a PDF."); return; }
     if (file.size > MAX_BYTES) {
-      fail(`That file is ${(file.size / 1048576).toFixed(1)}MB — the limit is 12MB.`);
+      fail(`That file is ${(file.size / 1048576).toFixed(1)}MB. The limit is 12MB.`);
       return;
     }
 
@@ -199,7 +199,7 @@
       btn.textContent = "Copied";
       setTimeout(() => { btn.textContent = "Copy"; }, 1400);
     } catch {
-      fail("Clipboard blocked — select the text and copy manually.");
+      fail("Clipboard blocked. Select the text and copy manually.");
     }
   });
 

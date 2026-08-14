@@ -93,7 +93,7 @@ or logged, and there is nothing to bill per request.
 
 Two details make that work. `pdfplumber` declares `pypdfium2` and Pillow, but
 both are reachable only through its `to_image()` path, which this script never
-calls — `pypdfium2` has no Emscripten wheel at all, so the worker stubs both
+calls. `pypdfium2` has no Emscripten wheel at all, so the worker stubs both
 out. And the Pyodide runtime is self-hosted rather than pulled from a CDN,
 which keeps PyPI out of the request path and lets the site run under a
 same-origin CSP.
@@ -119,4 +119,4 @@ chordclean is free. If it saved you some typing,
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).
