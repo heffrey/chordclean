@@ -373,31 +373,44 @@ def clean(pdf_path, fmt="txt", debug=False):
 
     out = []
     prev = None
+    prev_kind = None
     for ln in body:
         toks = [w["text"] for w in ln["words"]]
         text = " ".join(toks).strip()
 
+        if SECTION_RE.match(text):
+            kind = "SECTION"
+        elif is_chord_line(toks):
+            kind = "CHORD"
+        else:
+            kind = "LYRIC"
+
         if prev is not None:
             gap = ln["y"] - prev["y"]
-            if ln["page"] != prev["page"] or gap > normal_gap * 1.6:
+            # A chord row and the lyric under it are one unit, so nothing may be
+            # inserted between them. This matters at a page boundary: y resets,
+            # so the gap arithmetic is meaningless and a page break is treated as
+            # a stanza break outright. A tab that runs out of page between a
+            # chord row and its words would otherwise be split, leaving the
+            # chords hanging off the end of the stanza above.
+            paired = prev_kind == "CHORD" and kind == "LYRIC"
+            if not paired and (ln["page"] != prev["page"] or gap > normal_gap * 1.6):
                 if out and out[-1] != "":
                     out.append("")
 
-        if SECTION_RE.match(text):
+        if kind == "SECTION":
             if out and out[-1] != "":
                 out.append("")
             out.append(text)
-            kind = "SECTION"
-        elif is_chord_line(toks):
+        elif kind == "CHORD":
             out.append(render_chord_line(ln["words"], margin, cw))
-            kind = "CHORD"
         else:
             out.append(render_text_line(ln["words"], margin, cw))
-            kind = "LYRIC"
 
         if debug:
             print(f"[{kind:7}] {text[:70]}", file=sys.stderr)
         prev = ln
+        prev_kind = kind
 
     # Collapse runs of blank lines.
     collapsed = []
