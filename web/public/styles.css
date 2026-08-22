@@ -157,8 +157,8 @@ footer a:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
 /* ---------- how-to ---------- */
 
-/* Sits below the sheet on purpose: a visitor who already has a PDF should
-   meet the dropzone first, not a video. */
+/* Stacked under the dropzone on narrow screens, and moved alongside it once
+   there is room -- see the grid at the bottom of this file. */
 #howto {
   margin-top: 2.5rem;
   padding-top: 1.75rem;
@@ -191,3 +191,48 @@ footer a:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 }
 
 .walkthrough:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* ---------- wide layout ---------- */
+
+/* Dropzone and walkthrough side by side, with the sheet spanning underneath
+   both once there is one. Below this width everything falls back to source
+   order, which is already the right order: drop first, explanation after. */
+@media (min-width: 48rem) {
+  main {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    column-gap: 2rem;
+    row-gap: 2.25rem;
+  }
+
+  #intake {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #howto {
+    grid-column: 2;
+    grid-row: 1;
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+  }
+
+  #output {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  /* Heading, steps and a square video stack up to roughly three times the
+     height of a dropzone left at its natural size. Rather than leave the left
+     column short, let the target grow to meet it: a bigger thing to drop a
+     file on is no loss. */
+  .dropzone {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+}
