@@ -44,8 +44,10 @@
 
   <!-- The one question the dropzone cannot answer: where a tab PDF comes from
        in the first place. Shipped as video rather than the original GIF, at a
-       quarter of the bytes for the same twenty seconds, and preload="none"
-       keeps a visitor who already has their PDF from downloading any of it. -->
+       quarter of the bytes for the same twenty seconds, which is what makes it
+       cheap enough to autoplay. It behaves as the GIF it was recorded as: no
+       controls, no sound, no way to stop it. Muted and playsinline are not
+       decoration, though. Without both, iOS refuses to autoplay at all. -->
   <section id="howto">
     <h2>Where the PDF comes from</h2>
     <ol class="steps">
@@ -53,7 +55,7 @@
       <li>On the print sheet, save it to Files as a PDF.</li>
       <li>Drop that file up above.</li>
     </ol>
-    <video class="walkthrough" controls loop muted playsinline preload="none"
+    <video class="walkthrough" autoplay loop muted playsinline
            poster="walkthrough.jpg" width="360" height="360"
            aria-label="Screen recording: printing a tab to PDF on a phone, then opening it on chordclean">
       <source src="walkthrough.webm" type="video/webm">
