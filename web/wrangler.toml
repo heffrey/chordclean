@@ -1,11 +1,14 @@
 name = "chordclean"
+main = "worker.js"
 compatibility_date = "2026-08-14"
 
-# Static assets only -- there is no Worker script. Every PDF is parsed in the
-# visitor's own browser under Pyodide, so the origin never receives an upload
-# and there is nothing to store, log, or bill per request.
+# Static assets, fronted by a Worker that does nothing but pass them through
+# and answer /api/cleaned. Every PDF is still parsed in the visitor's own
+# browser under Pyodide, so the origin never receives an upload and there is
+# nothing to store, log, or bill per parse.
 [assets]
 directory = "./public"
+binding = "ASSETS"
 # Deliberately NOT single-page-application: that mode answers a missing asset
 # with index.html and a 200, so a runtime file that failed to ship arrives at
 # the module worker as HTML and dies on a parse error instead of a 404.
@@ -14,3 +17,10 @@ not_found_handling = "none"
 [[routes]]
 pattern = "chordclean.com"
 custom_domain = true
+
+# Holds one row per day: a date and a tally of successful cleans. Nothing
+# about the visitor or their PDF is recorded. See schema.sql.
+[[d1_databases]]
+binding = "DB"
+database_name = "chordclean-counter"
+database_id = "c77e3477-f020-444c-bad2-484b0bc86984"

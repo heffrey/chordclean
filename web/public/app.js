@@ -122,6 +122,12 @@
     outputEl.hidden = false;
     setStatus("");
     outputEl.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    // Count that a sheet got cleaned, and nothing else: the request body is
+    // empty, and the server stores only a date and a tally. Same-origin, so
+    // no third party sees it and the CSP needs no widening. Fire and forget,
+    // because a counter must never break the thing it is counting.
+    fetch("/api/cleaned", { method: "POST", keepalive: true }).catch(() => {});
   }
 
   function reset() {
