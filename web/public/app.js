@@ -220,6 +220,20 @@
 
   document.getElementById("again").addEventListener("click", reset);
 
+  // ---------------------------------------------------------- walkthrough
+
+  // A twenty-second loop playing on its own is the exact thing this setting
+  // is about. The attribute stays in the markup so the ordinary case needs no
+  // JS, and gets taken back here for visitors who asked for less motion. They
+  // get the controls the rest of the page does without, because a loop that
+  // never starts and cannot be started is just a broken-looking still.
+  const walkthrough = document.querySelector(".walkthrough");
+  if (walkthrough && matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    walkthrough.autoplay = false;
+    walkthrough.pause();
+    walkthrough.controls = true;
+  }
+
   // Boot Python immediately rather than on first drop: the download is the
   // slow part, and it overlaps with the visitor finding their file.
   spawn();
