@@ -112,6 +112,21 @@ from the CLI tool.
 Output is verified by hashing: the browser and a local venv produce
 byte-identical text for the same PDF.
 
+### The link preview
+
+`web/og/og.html` is the source for the card that Slack, iMessage and the rest
+show when someone pastes the link: a real cleaned verse, at a size that still
+reads once the card is scaled down to a thumbnail. Edit that file and re-render:
+
+```
+cd web
+npm run build:og      # writes public/og.png, 1200x630
+```
+
+It drives whatever Chrome or Chromium is already on the machine, so there is
+nothing to install; set `CHROME_PATH` if it cannot find one. `public/og.png` is
+committed, so a deploy never needs a browser.
+
 ## Support
 
 chordclean is free. If it saved you some typing,

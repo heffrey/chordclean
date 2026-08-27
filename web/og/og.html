@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>chordclean og:image source</title>
+<!--
+  Source for public/og.png, the link-preview card. Edit this file, then
+  re-render it with `npm run build:og` from web/. The PNG is committed, so a
+  deploy never needs a browser.
+
+  The card is deliberately just the output: a real cleaned lead sheet, at a
+  size that survives being scaled down to a Slack or iMessage thumbnail. A
+  before/after split was tried and does not: at preview scale both halves
+  collapse into grey texture, and the "before" stops reading as junk.
+
+  Type is named faces rather than the site's ui-sans-serif/system-ui stack.
+  Whatever renders here is baked into the PNG, so a stack that resolves to a
+  different face on every machine would mean the card silently changes
+  shape the next time someone re-renders it.
+
+  Lyrics are "House of the Rising Sun", traditional and public domain.
+-->
+<style>
+  /* Same tokens as the site's light theme. A card cannot follow the
+     viewer's colour scheme, and the light palette is the brand. */
+  :root {
+    --bg: #fbfaf7;
+    --panel: #ffffff;
+    --ink: #1c1b19;
+    --muted: #6d6a63;
+    --line: #e4e0d8;
+    --accent: #b2451f;
+    --section: #3f6b5c;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    width: 1200px;
+    height: 630px;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Helvetica Neue", Helvetica, Arial, "Liberation Sans", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .card {
+    width: 1200px;
+    height: 630px;
+    padding: 44px 56px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 54px;
+    line-height: 1.05;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+  }
+
+  .tagline {
+    margin: 9px 0 0;
+    font-size: 26px;
+    line-height: 1.35;
+    color: var(--muted);
+    letter-spacing: -0.005em;
+  }
+
+  .tagline .em { color: var(--ink); }
+
+  .privacy {
+    margin: 6px 0 0;
+    font-size: 22px;
+    line-height: 1.35;
+    color: var(--muted);
+  }
+
+  /* The panel takes whatever vertical room is left, and the sheet sits
+     centred in it, so nudging a type size above never pushes the last
+     lyric line off the bottom of the card. */
+  .panel {
+    flex: 1;
+    min-height: 0;
+    margin-top: 24px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--panel);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Every space in here is load-bearing: it is what holds a chord over its
+     own syllable. Do not reflow or re-indent the <pre>. */
+  .sheet {
+    margin: 0;
+    font-family: "SF Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace;
+    font-size: 40px;
+    line-height: 1.4;
+    white-space: pre;
+    letter-spacing: -0.01em;
+  }
+
+  .sheet .section { color: var(--section); font-weight: 700; }
+  .sheet .chord { color: var(--accent); font-weight: 700; }
+  .sheet .blank { display: block; height: 0.55em; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>chordclean</h1>
+  <p class="tagline">
+    Tab-site PDFs, stripped to <span class="em">chords over lyrics</span>.
+  </p>
+  <p class="privacy">Runs in your browser. Nothing is uploaded.</p>
+
+  <div class="panel">
+<pre class="sheet"><span class="section">[Verse 1]</span>
+<span class="blank"></span><span class="chord">Am         C       D   F</span>
+There is a house in New Orleans
+<span class="blank"></span><span class="chord">Am        C   E</span>
+They call the Risin' Sun</pre>
+  </div>
+</div>
+
+</body>
+</html>

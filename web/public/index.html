@@ -6,6 +6,22 @@
 <title>chordclean: tab PDFs, stripped to chords over lyrics</title>
 <meta name="description" content="Drop a tab-site PDF and get back just the chords over the lyrics: a clean lead sheet to play or sing from. Runs entirely in your browser; nothing is uploaded.">
 <link rel="stylesheet" href="styles.css">
+
+<!-- Link preview. og.png is built from og/og.html by `npm run build:og`;
+     it is committed, so a deploy never needs a browser. The URLs have to be
+     absolute: a scraper resolves them against nothing. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="chordclean">
+<meta property="og:url" content="https://chordclean.com/">
+<meta property="og:title" content="chordclean: tab PDFs, stripped to chords over lyrics">
+<meta property="og:description" content="Drop a tab-site PDF and get back just the chords over the lyrics: a clean lead sheet to play or sing from. Runs entirely in your browser; nothing is uploaded.">
+<meta property="og:image" content="https://chordclean.com/og.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="A cleaned lead sheet: the section header [Verse 1], then chords sitting above the syllables they belong to.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://chordclean.com/og.png">
 <!-- Deliberately not a guitar: the source PDFs come from tab sites, but a
      chords-over-lyrics lead sheet is as much for piano and voice. -->
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>🎼</text></svg>">
