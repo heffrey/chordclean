@@ -12,6 +12,7 @@
     "build:runtime": "node scripts/build-runtime.mjs"
   },
   "devDependencies": {
-    "pyodide": "^314.0.3"
+    "pyodide": "^314.0.3",
+    "wrangler": "^4.127.0"
   }
 }
