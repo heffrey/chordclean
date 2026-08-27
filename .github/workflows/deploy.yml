@@ -1,0 +1,73 @@
+name: Deploy chordclean.com
+
+# Merging to main ships the site. Paths are filtered because a deploy rebuilds
+# and re-uploads a 22MB Pyodide bundle, and a README-only commit changes
+# nothing the origin serves.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - 'chordclean.py'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+
+# One deploy at a time. Two merges in quick succession queue instead of racing
+# each other onto the custom domain; the older one is not cancelled, because a
+# half-finished upload is worse than a redundant one.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      # The same script `npm run deploy` runs locally: copies ../chordclean.py
+      # into public/ and assembles public/pyodide/ from jsdelivr and PyPI.
+      # Neither is committed, so this is not optional. Run it explicitly rather
+      # than letting npm fire it as deploy's pre-hook, so the bundle check below
+      # can sit between the build and the upload.
+      - name: Build runtime
+        run: npm run predeploy
+
+      # wrangler.toml sets not_found_handling = "none" on purpose, so a runtime
+      # file that failed to download 404s at the worker at request time instead
+      # of failing loudly here. Catch an incomplete bundle before it reaches the
+      # origin rather than after.
+      - name: Check bundle is complete
+        run: |
+          missing=0
+          for f in public/chordclean.py \
+                   public/pyodide/wheels.json \
+                   public/pyodide/pyodide.mjs \
+                   public/pyodide/pyodide.asm.wasm \
+                   public/pyodide/python_stdlib.zip; do
+            if [ ! -s "$f" ]; then
+              echo "::error::missing or empty after build: $f"
+              missing=1
+            fi
+          done
+          exit $missing
+
+      - name: Deploy
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
