@@ -92,7 +92,7 @@ JUNK_EXACT = {
     "dmca", "accessibility statement", "upgrade to pro", "articles staff",
     "fresh tabs", "musehub", "guitar tuner", "discover", "other language",
     "english", "search", "comments", "chords", "strumming", "guitar",
-    "español", "indonesia", "favorites",
+    "español", "indonesia", "favorites", "create correction",
 }
 
 JUNK_PATTERNS = [
@@ -271,6 +271,24 @@ def left_margin(lines):
     return xs[len(xs) // 10]  # 10th percentile, ignores stray indents
 
 
+def body_font_lines(lines):
+    """Lines restricted to words set in the tab's body (monospace) font.
+
+    Page chrome in a proportional font -- nav links, sidebars, widget labels
+    -- often starts well to the left of the tab's own column. Left uncut, it
+    drags the 10th-percentile margin down to whatever the chrome's left edge
+    is instead of the tab's, and every real line comes out over-indented.
+    Restricting the statistics to body-font words keeps them reading the tab
+    grid, not the page around it.
+    """
+    out = []
+    for ln in lines:
+        words = [w for w in ln["words"] if is_body_word(w)]
+        if words:
+            out.append({"y": ln["y"], "page": ln["page"], "words": words})
+    return out
+
+
 def render_chord_line(words, margin, cw):
     """Place each chord token at the column matching its x position."""
     out = ""
@@ -306,16 +324,39 @@ INFO_SECTIONS = re.compile(
 DIAGRAM_RE = re.compile(r"^[A-G][#b]?\S*\s+[0-9xX]{4,6}$")
 
 
+def starts_alternating_body(kept, i, pairs=2):
+    """Does `kept[i]` open a run of alternating chord/lyric lines?
+
+    Used to sanity-check the no-section-header fallback, which otherwise
+    starts the body at the *first* line matching `is_chord_line` -- a chord
+    row from real tab content, but also anything else on the page shaped
+    like one. Ultimate Guitar's per-instrument "PLAY THIS TAB" preview
+    widget prints a bare chord line above the real tab (e.g. `Am Bb`), and
+    it isn't followed by lyrics, only by more widget chrome. Real content
+    alternates chord/lyric/chord/lyric; furniture doesn't, so require a
+    couple of pairs of it before trusting a candidate start.
+    """
+    window = kept[i : i + pairs * 2]
+    if len(window) < pairs * 2:
+        return True  # too little left on the page to check -- trust it
+    kinds = [
+        "CHORD" if is_chord_line([w["text"] for w in ln["words"]]) else "LYRIC"
+        for ln in window
+    ]
+    return all(a != b for a, b in zip(kinds, kinds[1:]))
+
+
 def clean(pdf_path, fmt="txt", debug=False):
     raw = extract_lines(pdf_path)
     if not raw:
         return ""
 
-    cw = char_width(raw)
-    margin = left_margin(raw)
-
     # Only trust the font signal if this PDF actually sets the tab in monospace.
     use_font = any(is_body_word(w) for ln in raw for w in ln["words"])
+
+    metrics_lines = body_font_lines(raw) if use_font else raw
+    cw = char_width(metrics_lines)
+    margin = left_margin(metrics_lines)
 
     # Pass 1: drop junk tokens, then junk lines, stopping at the footer.
     kept = []
@@ -346,9 +387,16 @@ def clean(pdf_path, fmt="txt", debug=False):
     if start is None:  # no section headers at all -- fall back to the first chord line
         start = next(
             (i for i, ln in enumerate(kept)
-             if is_chord_line([w["text"] for w in ln["words"]])),
-            0,
+             if is_chord_line([w["text"] for w in ln["words"]])
+             and starts_alternating_body(kept, i)),
+            None,
         )
+        if start is None:  # nothing passed that check either -- take the bare first match
+            start = next(
+                (i for i, ln in enumerate(kept)
+                 if is_chord_line([w["text"] for w in ln["words"]])),
+                0,
+            )
 
     body = []
     in_info = False

@@ -37,13 +37,29 @@ entry; that's the escape hatch.
 **`char_width` and `left_margin` are computed on the raw lines, before token
 stripping.** Chord column positions derive from both. Recomputing them later
 shifts every chord in the output, so eyeball the alignment if you touch pass 1
-of `clean()`.
+of `clean()`. They're computed over `body_font_lines(raw)`, not `raw` itself,
+when the document has a detectable body font: proportional-font chrome (nav,
+sidebars, widget labels) can start far to the left of the tab's own column,
+and folding it into the 10th-percentile margin drags every real line's
+indent out with it — see the `left_margin` docstring. Fall back to `raw`
+only for documents with no monospace text at all, same as `use_font`
+elsewhere.
 
 **Section detection sets the scope.** `clean()` starts the body at the first
 `[Section]` header rather than the first chord line: the chord-diagram row
 above the tab matches `is_chord_line`, and starting there let the entire header
 block leak through. The fallback to the first chord line exists only for PDFs
-with no section headers at all.
+with no section headers at all, and it has the same failure mode one level
+down: a PDF whose page furniture includes its own chord-shaped snippet (e.g.
+Ultimate Guitar's per-instrument "PLAY THIS TAB" preview widget, which prints
+something like `Am Bb` above the real tab) can make the fallback start there
+instead of at the real first line, leaking the furniture between the two
+through as unrecognized LYRIC. `starts_alternating_body()` guards against
+this: a candidate start only counts if it opens a run of alternating
+chord/lyric lines, which furniture like the preview widget doesn't (it's
+followed by more widget chrome, not a lyric). If nothing satisfies that
+check, the fallback still takes the bare first `is_chord_line` match rather
+than giving up.
 
 ## Verifying a change
 
