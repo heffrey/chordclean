@@ -49,13 +49,17 @@ elsewhere.
 `[Section]` header rather than the first chord line: the chord-diagram row
 above the tab matches `is_chord_line`, and starting there let the entire header
 block leak through. The fallback to the first chord line exists only for PDFs
-with no section headers at all, and it has the same failure mode: a PDF whose
-page furniture includes its own chord-shaped snippet (e.g. Ultimate Guitar's
-per-instrument "PLAY THIS TAB" preview widget, which prints something like
-`Am Bb` above the real tab) can make the fallback start there instead of at
-the real first line, leaking the furniture between the two through as
-unrecognized LYRIC. Not yet fixed — no section-header PDF in the test set
-exercised it until "THE PEAKS" from Everything Everything did.
+with no section headers at all, and it has the same failure mode one level
+down: a PDF whose page furniture includes its own chord-shaped snippet (e.g.
+Ultimate Guitar's per-instrument "PLAY THIS TAB" preview widget, which prints
+something like `Am Bb` above the real tab) can make the fallback start there
+instead of at the real first line, leaking the furniture between the two
+through as unrecognized LYRIC. `starts_alternating_body()` guards against
+this: a candidate start only counts if it opens a run of alternating
+chord/lyric lines, which furniture like the preview widget doesn't (it's
+followed by more widget chrome, not a lyric). If nothing satisfies that
+check, the fallback still takes the bare first `is_chord_line` match rather
+than giving up.
 
 ## Verifying a change
 
