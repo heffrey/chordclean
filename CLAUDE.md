@@ -20,20 +20,25 @@ see why a line survived or vanished.
 
 ## Things that will bite you
 
-**Printing the `.txt` output can split a chord row from its lyric across a
-printed page.** This is not a chordclean bug and isn't fixed here on
-purpose. TextEdit's (and most plain-text print pipelines') pagination just
-counts a fixed number of lines per page, driven by font size and page
-height, with no idea that a chord row and the lyric under it are one unit
--- it doesn't even respect the blank lines chordclean uses for stanza
-breaks. Confirmed directly on a real file: a page broke between a chord
-line and its lyric at line 50/51 of the output, no different from any other
-line boundary as far as TextEdit was concerned. A `.txt` file has no page
-concept at all, so the only lever over this is the form-feed character
-(`\f`), and using it would mean guessing a lines-per-page budget for a
-printer/font/page-size chordclean has no visibility into -- asked about
-fixing it 2026-09-04, decision was to leave it alone rather than build
-approximate pagination around a guess.
+**Printing the `.txt` output can split a chord row from its lyric, and
+`--lines-per-page` is the opt-in answer.** TextEdit's (and most plain-text
+print pipelines') pagination just counts a fixed number of lines per page,
+driven by font size and page height, with no idea that a chord row and the
+lyric under it are one unit -- it doesn't even respect the blank lines
+chordclean uses for stanza breaks. Confirmed on a real file: a page broke
+between a chord line and its lyric at line 50/51 of the output.
+
+`paginate()` answers it with the only lever plain text has, the form feed
+(`\f`), spent at stanza boundaries. Two things about it are load-bearing.
+The budget is a *maximum*, so the break goes on the last boundary that
+fits, never the next one past it -- overrunning would quietly hand the page
+back to the printer's own line count, which is the whole thing being
+avoided.
+And the budget is a guess about a page chordclean cannot see, so the error
+direction matters: too low costs a short page, too high lets the printer
+break first. Hence opt-in and off by default -- the default output is
+unchanged, and the web build and anything else parsing the text never sees
+a form feed unless it asks.
 
 **Never pass `fontname` to `page.extract_words(extra_attrs=...)`.** pdfplumber
 starts a new word wherever any extra attribute changes mid-token, and ligature

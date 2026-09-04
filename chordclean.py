@@ -346,7 +346,64 @@ def starts_alternating_body(kept, i, pairs=2):
     return all(a != b for a, b in zip(kinds, kinds[1:]))
 
 
-def clean(pdf_path, fmt="txt", debug=False):
+def paginate(lines, lines_per_page=50):
+    """Force page breaks at stanza boundaries, so printing can't split a pair.
+
+    A .txt file has no page concept: whatever prints it decides where pages
+    break, and both TextEdit and the usual plain-text print pipelines do it
+    by counting a fixed number of lines, blind to what's on them. That lands
+    a break inside a chord/lyric pair sooner or later -- the chord row ends
+    one page, its words start the next.
+
+    The one lever plain text has is the form feed (\\f), which those same
+    pipelines honour as "start a new page here". Spending it at a blank line
+    once `lines_per_page` is used up puts every break on a stanza boundary
+    instead. This is an approximation, and the direction of the error
+    matters: budget under what the page really fits and the worst case is a
+    short page, but budget over it and the printer reaches its own limit
+    first and breaks wherever it likes. So `lines_per_page` wants to stay
+    conservative. `lines_per_page` is a hard maximum, not a target: the break
+    goes on the last stanza boundary that fits, and the rest of that stanza
+    moves to the next page. Overrunning the budget to reach the *next*
+    boundary would hand the page back to the printer's own line count, which
+    is the thing being avoided. A stanza longer than a whole page has no
+    boundary to use, and is cut at the budget after backing up off any chord
+    rows at the cut, so the pair still travels together.
+    """
+    out = []
+    page = []
+    last_blank = None  # index in `page` of the newest stanza boundary
+
+    def flush():
+        nonlocal page, last_blank
+        if last_blank is not None:
+            cut, drop = last_blank, 1  # the blank is spent on the break itself
+        else:
+            # No stanza boundary on this page. Cut at the budget, but never
+            # directly under a chord row -- that is the split being avoided,
+            # so walk the chord rows down onto the next page with their words.
+            cut, drop = len(page), 0
+            while cut > 1 and is_chord_line(page[cut - 1].split()):
+                cut -= 1
+        out.extend(page[:cut])
+        out.append("\f")
+        page = page[cut + drop:]
+        last_blank = next((i for i, l in enumerate(page) if l == ""), None)
+
+    for line in lines:
+        if len(page) >= lines_per_page:
+            flush()
+        if line == "":
+            if not page:
+                continue  # a stanza break landing at the top of a page is spent
+            last_blank = len(page)
+        page.append(line)
+
+    out.extend(page)
+    return out
+
+
+def clean(pdf_path, fmt="txt", debug=False, lines_per_page=None):
     raw = extract_lines(pdf_path)
     if not raw:
         return ""
@@ -467,6 +524,9 @@ def clean(pdf_path, fmt="txt", debug=False):
             continue
         collapsed.append(line)
 
+    if lines_per_page:
+        collapsed = paginate(collapsed, lines_per_page)
+
     result = "\n".join(collapsed).rstrip() + "\n"
 
     if fmt == "md":
@@ -485,9 +545,15 @@ def main():
     ap.add_argument("--format", choices=["txt", "md"], default="txt")
     ap.add_argument("--debug", action="store_true",
                     help="print per-line classification to stderr")
+    ap.add_argument("--lines-per-page", type=int, nargs="?", const=50,
+                    metavar="N",
+                    help="insert form-feed page breaks at stanza boundaries "
+                         "every N lines (default 50), so printing the output "
+                         "can't split a chord row from its lyric")
     args = ap.parse_args()
 
-    text = clean(args.pdf, fmt=args.format, debug=args.debug)
+    text = clean(args.pdf, fmt=args.format, debug=args.debug,
+                 lines_per_page=args.lines_per_page)
 
     if args.out:
         Path(args.out).write_text(text, encoding="utf-8")

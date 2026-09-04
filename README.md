@@ -37,11 +37,22 @@ python3 -m venv .venv
 .venv/bin/python chordclean.py input.pdf -o clean.txt
 .venv/bin/python chordclean.py input.pdf --format md
 .venv/bin/python chordclean.py input.pdf --debug
+.venv/bin/python chordclean.py input.pdf --lines-per-page
 ```
 
 `--debug` prints how every line was classified (SECTION / CHORD / LYRIC) to
 stderr. Reach for it when a line is missing from the output, or when a lyric
 line got read as chords.
+
+`--lines-per-page` is for printing. Nothing in a text file tells a printer
+where pages end, so it counts lines and cuts wherever the count runs out —
+which eventually falls between a chord row and the words underneath it,
+putting the chords on one page and the line they belong to on the next. The
+flag spends form feeds at stanza breaks instead, so every page ends on a
+whole stanza. It takes a line budget, defaulting to 50, which should be at
+or under what your page really fits: budget low and you get a short page,
+budget high and the printer reaches its own limit first and breaks where it
+likes. Off unless asked for, so the output is otherwise plain text.
 
 ## What survives
 
