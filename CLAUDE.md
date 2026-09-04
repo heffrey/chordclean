@@ -20,6 +20,21 @@ see why a line survived or vanished.
 
 ## Things that will bite you
 
+**Printing the `.txt` output can split a chord row from its lyric across a
+printed page.** This is not a chordclean bug and isn't fixed here on
+purpose. TextEdit's (and most plain-text print pipelines') pagination just
+counts a fixed number of lines per page, driven by font size and page
+height, with no idea that a chord row and the lyric under it are one unit
+-- it doesn't even respect the blank lines chordclean uses for stanza
+breaks. Confirmed directly on a real file: a page broke between a chord
+line and its lyric at line 50/51 of the output, no different from any other
+line boundary as far as TextEdit was concerned. A `.txt` file has no page
+concept at all, so the only lever over this is the form-feed character
+(`\f`), and using it would mean guessing a lines-per-page budget for a
+printer/font/page-size chordclean has no visibility into -- asked about
+fixing it 2026-09-04, decision was to leave it alone rather than build
+approximate pagination around a guess.
+
 **Never pass `fontname` to `page.extract_words(extra_attrs=...)`.** pdfplumber
 starts a new word wherever any extra attribute changes mid-token, and ligature
 glyphs come from a different font subset — `Difficulty:` comes back as `Di` +
