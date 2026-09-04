@@ -271,6 +271,24 @@ def left_margin(lines):
     return xs[len(xs) // 10]  # 10th percentile, ignores stray indents
 
 
+def body_font_lines(lines):
+    """Lines restricted to words set in the tab's body (monospace) font.
+
+    Page chrome in a proportional font -- nav links, sidebars, widget labels
+    -- often starts well to the left of the tab's own column. Left uncut, it
+    drags the 10th-percentile margin down to whatever the chrome's left edge
+    is instead of the tab's, and every real line comes out over-indented.
+    Restricting the statistics to body-font words keeps them reading the tab
+    grid, not the page around it.
+    """
+    out = []
+    for ln in lines:
+        words = [w for w in ln["words"] if is_body_word(w)]
+        if words:
+            out.append({"y": ln["y"], "page": ln["page"], "words": words})
+    return out
+
+
 def render_chord_line(words, margin, cw):
     """Place each chord token at the column matching its x position."""
     out = ""
@@ -311,11 +329,12 @@ def clean(pdf_path, fmt="txt", debug=False):
     if not raw:
         return ""
 
-    cw = char_width(raw)
-    margin = left_margin(raw)
-
     # Only trust the font signal if this PDF actually sets the tab in monospace.
     use_font = any(is_body_word(w) for ln in raw for w in ln["words"])
+
+    metrics_lines = body_font_lines(raw) if use_font else raw
+    cw = char_width(metrics_lines)
+    margin = left_margin(metrics_lines)
 
     # Pass 1: drop junk tokens, then junk lines, stopping at the footer.
     kept = []
