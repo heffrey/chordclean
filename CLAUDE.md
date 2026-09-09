@@ -45,6 +45,24 @@ indent out with it — see the `left_margin` docstring. Fall back to `raw`
 only for documents with no monospace text at all, same as `use_font`
 elsewhere.
 
+**Chord rows do not always share the lyrics' grid.** `char_width` and
+`left_margin` describe the *lyric* face. UG sets the chord rows in that same
+face, so they share one grid; GuitarTuna sets chords in a proportional UI face
+on a grid of its own — about 1% narrower, indented half a character — and
+measuring those against the lyric grid walks a chord a full column left of its
+syllable by the right-hand edge of the page. `chord_grid()` derives a separate
+origin and pitch, but only for a document whose chord rows and lyric rows are
+in different faces. Make it fire unconditionally and you will shift every
+chord in every UG sheet.
+
+**`drift` is the other half of that.** The proportional face spends half a
+column extra on each character past the first, so a single `Am` used to leave
+the rest of its row sitting half a column right of the syllables it belonged
+to. `chord_grid()` measures whether a document actually shows that slip rather
+than assuming it, and ties go to no correction. `render_chord_line` also
+rounds half-up instead of `round()`'s half-to-even, so a chord landing exactly
+between two columns is placed the same way every time.
+
 **Section detection sets the scope.** `clean()` starts the body at the first
 `[Section]` header rather than the first chord line: the chord-diagram row
 above the tab matches `is_chord_line`, and starting there let the entire header
@@ -61,9 +79,19 @@ followed by more widget chrome, not a lyric). If nothing satisfies that
 check, the fallback still takes the bare first `is_chord_line` match rather
 than giving up.
 
+**Not every site brackets its headers.** GuitarTuna writes them bare —
+`Verse 1`, `Outro 1` — so `PLAIN_SECTION_RE` matches a fixed vocabulary of
+section names and `section_header()` normalises them into brackets. Match a
+vocabulary, never a shape like "a short line of its own", or one-word lyrics
+get promoted to headers. Keep emitting the bracketed form: the web build
+labels output lines with `SECTION_RE`, so a bare header would render as a
+lyric.
+
 ## Verifying a change
 
-There is no test suite. Run against a real PDF and check three things.
+There is no test suite. Run against a real PDF and check four things. Use one
+PDF from each site — the two exports differ enough that a change can look fine
+on one and wreck the other.
 
 ```
 .venv/bin/python chordclean.py "<file>.pdf" -o clean.txt
@@ -84,3 +112,16 @@ grep -vE "^\[(SECTION|CHORD|LYRIC) *\]" /tmp/dbg.txt
 
 3. Chords still sit over the right syllables. Read the output. No automated
    check covers this, and it is the thing most likely to break silently.
+
+4. The sheets that already worked are untouched. Anything that goes near the
+   grid has to leave them alone, so capture the output *before* editing and
+   diff it after:
+
+```
+.venv/bin/python chordclean.py "<ug file>.pdf" -o /tmp/before.txt   # before
+.venv/bin/python chordclean.py "<ug file>.pdf" -o /tmp/after.txt    # after
+diff /tmp/before.txt /tmp/after.txt
+```
+
+   For a change that is meant to affect only one site's PDFs, that diff should
+   be empty for the other's.
