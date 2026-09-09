@@ -20,6 +20,7 @@ Requires: pdfplumber  (pip install pdfplumber)
 """
 
 import argparse
+import math
 import re
 import statistics
 import sys
@@ -92,7 +93,7 @@ JUNK_EXACT = {
     "dmca", "accessibility statement", "upgrade to pro", "articles staff",
     "fresh tabs", "musehub", "guitar tuner", "discover", "other language",
     "english", "search", "comments", "chords", "strumming", "guitar",
-    "español", "indonesia", "favorites", "create correction",
+    "español", "indonesia", "favorites", "n/a", "create correction",
 }
 
 JUNK_PATTERNS = [
@@ -161,7 +162,7 @@ _JUNK_PHRASE_TOKENS = sorted(
 
 # The chord/lyric grid only survives in a monospace face; everything the site
 # wraps around it is proportional.
-_BODY_FONTS = ("Menlo", "Courier", "Mono")
+_BODY_FONTS = ("Menlo", "Courier", "Mono", "Inconsolata")
 
 
 def is_body_word(w) -> bool:
@@ -289,14 +290,84 @@ def body_font_lines(lines):
     return out
 
 
-def render_chord_line(words, margin, cw):
-    """Place each chord token at the column matching its x position."""
+def dominant_font(lines):
+    names = [w.get("fontname", "") for ln in lines for w in ln["words"]]
+    return max(set(names), key=names.count) if names else ""
+
+
+def _on_grid(chord_lines, origin, pitch, drift, tol=0.05):
+    """How many chords land squarely on a column of the given grid."""
+    hits = 0
+    for ln in chord_lines:
+        slip = 0.0
+        for w in ln["words"]:
+            col = (w["x0"] - origin) / pitch - slip
+            hits += abs(col - round(col)) < tol
+            slip += drift * (len(w["text"]) - 1)
+    return hits
+
+
+def chord_grid(chord_lines, lyric_lines, margin, cw):
+    """Return the (origin, pitch, drift) the chord rows are laid out on.
+
+    UG sets the chord rows in the same monospace face as the lyrics, so the
+    lyric grid already places them and this returns it unchanged.  GuitarTuna
+    sets lyrics in Inconsolata and chords in a proportional UI face on a grid
+    of its own -- about 1% narrower, and indented half a character -- and
+    measuring those chords against the lyric grid walks them a full column left
+    by the right-hand edge of the page.  So a chord grid is only derived for a
+    document that sets the two rows in different faces.
+
+    `drift` is the extra half column a proportional chord takes up for every
+    character past the first, which carries the rest of its row along with it:
+    in these sheets an "Am" leaves every later chord on the row sitting half a
+    column right of the syllable it belongs to.
+    """
+    if not chord_lines or dominant_font(chord_lines) == dominant_font(lyric_lines):
+        return margin, cw, 0.0
+
+    # Chords on a row are a whole number of columns apart, so gap / columns is
+    # one column.  Single-column gaps are too short to average the rounding
+    # error out of, so only wider ones vote.
+    steps = []
+    for ln in chord_lines:
+        xs = [w["x0"] for w in ln["words"]]
+        for a, b in zip(xs, xs[1:]):
+            cols = round((b - a) / cw)
+            if cols >= 2:
+                steps.append((b - a) / cols)
+    pitch = statistics.median(steps) if steps else cw
+    if not 0.9 <= pitch / cw <= 1.1:  # nothing that far off is a column width
+        pitch = cw
+
+    # The leftmost chord in the song sits in column 0, which fixes the origin.
+    # If it is more than a character from the lyric margin it is not the same
+    # grid at all, and guessing would shift every chord in the output.
+    origin = min(w["x0"] for ln in chord_lines for w in ln["words"])
+    if not -cw < origin - margin < cw:
+        origin = margin
+
+    # Whether the rows really do slip is measured rather than assumed, so a tie
+    # -- or chords that already sit on the grid -- keeps the plain layout.
+    drift = max((0.0, 0.5), key=lambda d: _on_grid(chord_lines, origin, pitch, d))
+
+    return origin, pitch, drift
+
+
+def render_chord_line(words, margin, cw, drift=0.0):
+    """Place each chord token at the column matching its x position.
+
+    Rounding is half-up rather than round()'s half-to-even, so a chord landing
+    exactly between two columns is placed the same way every time.
+    """
     out = ""
+    slip = 0.0
     for w in words:
-        col = max(0, int(round((w["x0"] - margin) / cw)))
+        col = max(0, math.floor((w["x0"] - margin) / cw - slip + 0.5))
         if col < len(out):
             col = len(out) + 1  # never overwrite a previous chord
         out += " " * (col - len(out)) + w["text"]
+        slip += drift * (len(w["text"]) - 1)
     return out.rstrip()
 
 
@@ -312,6 +383,32 @@ def render_text_line(words, margin, cw, preserve_indent=True):
 # --------------------------------------------------------------------------
 
 SECTION_RE = re.compile(r"^\[[^\]]{1,40}\]$")
+
+# GuitarTuna writes its section headers as bare words -- "Verse 1", "Outro 1"
+# -- where UG brackets them.  Matching a fixed vocabulary rather than "a short
+# line of its own" is what keeps a one-word lyric from being promoted to a
+# header; the trailing number is the only thing allowed to vary.
+PLAIN_SECTION_RE = re.compile(
+    r"^(?:intro|outro|verse|pre[\s-]?chorus|post[\s-]?chorus|chorus|bridge"
+    r"|interlude|instrumental|solo|refrain|hook|breakdown|ending|coda|tag"
+    r"|riff|vamp)"
+    r"(?:\s*\d+)?$",
+    re.I,
+)
+
+
+def section_header(text):
+    """The bracketed form of `text` if it heads a section, else None.
+
+    Bare headers are normalised into brackets so the output has one section
+    syntax whatever the source PDF used -- which also means SECTION_RE still
+    matches every header in the finished text, as the web build assumes.
+    """
+    if SECTION_RE.match(text):
+        return text
+    if PLAIN_SECTION_RE.match(text):
+        return f"[{text}]"
+    return None
 
 # Sections that document the song rather than being part of it.  Dropped whole,
 # which takes the fingering diagrams and their explanatory prose with them.
@@ -380,7 +477,7 @@ def clean(pdf_path, fmt="txt", debug=False):
     start = next(
         (
             i for i, ln in enumerate(kept)
-            if SECTION_RE.match(" ".join(w["text"] for w in ln["words"]).strip())
+            if section_header(" ".join(w["text"] for w in ln["words"]).strip())
         ),
         None,
     )
@@ -401,9 +498,10 @@ def clean(pdf_path, fmt="txt", debug=False):
     body = []
     in_info = False
     for ln in kept[start:]:
+        head = section_header(" ".join(w["text"] for w in ln["words"]).strip())
+        if head:
+            in_info = bool(INFO_SECTIONS.match(head))
         text = " ".join(w["text"] for w in ln["words"]).strip()
-        if SECTION_RE.match(text):
-            in_info = bool(INFO_SECTIONS.match(text))
         if in_info or DIAGRAM_RE.match(text):
             continue
         body.append(ln)
@@ -411,7 +509,26 @@ def clean(pdf_path, fmt="txt", debug=False):
     if not body:
         return ""
 
-    # Pass 3: render, using vertical gaps to restore stanza breaks.
+    # Pass 3: classify, then render, using vertical gaps to restore stanza
+    # breaks.  Classification comes first because the chord rows have to be
+    # known before their grid can be measured.
+    heads = [
+        section_header(" ".join(w["text"] for w in ln["words"]).strip())
+        for ln in body
+    ]
+    kinds = [
+        "SECTION" if head
+        else "CHORD" if is_chord_line([w["text"] for w in ln["words"]])
+        else "LYRIC"
+        for ln, head in zip(body, heads)
+    ]
+    chord_margin, chord_cw, chord_drift = chord_grid(
+        [ln for ln, k in zip(body, kinds) if k == "CHORD"],
+        [ln for ln, k in zip(body, kinds) if k == "LYRIC"],
+        margin,
+        cw,
+    )
+
     gaps = [
         b["y"] - a["y"]
         for a, b in zip(body, body[1:])
@@ -422,16 +539,8 @@ def clean(pdf_path, fmt="txt", debug=False):
     out = []
     prev = None
     prev_kind = None
-    for ln in body:
-        toks = [w["text"] for w in ln["words"]]
-        text = " ".join(toks).strip()
-
-        if SECTION_RE.match(text):
-            kind = "SECTION"
-        elif is_chord_line(toks):
-            kind = "CHORD"
-        else:
-            kind = "LYRIC"
+    for ln, head, kind in zip(body, heads, kinds):
+        text = " ".join(w["text"] for w in ln["words"]).strip()
 
         if prev is not None:
             gap = ln["y"] - prev["y"]
@@ -449,9 +558,11 @@ def clean(pdf_path, fmt="txt", debug=False):
         if kind == "SECTION":
             if out and out[-1] != "":
                 out.append("")
-            out.append(text)
+            out.append(head)
         elif kind == "CHORD":
-            out.append(render_chord_line(ln["words"], margin, cw))
+            out.append(
+                render_chord_line(ln["words"], chord_margin, chord_cw, chord_drift)
+            )
         else:
             out.append(render_text_line(ln["words"], margin, cw))
 

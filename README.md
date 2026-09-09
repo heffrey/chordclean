@@ -1,6 +1,7 @@
 # chordclean
 
-Turns a guitar-tab PDF from a site like Ultimate Guitar into a plain text chord
+Turns a guitar-tab PDF from a site like Ultimate Guitar or GuitarTuna into a
+plain text chord
 sheet: section headers, chord lines, and lyrics, with each chord still sitting
 above the syllable it belongs to.
 
@@ -70,14 +71,34 @@ of matching the line whole. Multi-word phrases like `open in app` go
 unconditionally, since no lyric says them. Single ambiguous words need the font
 check above.
 
-**Structure.** The song starts at the first `[Section]` header. Sections named
-`[Chords]`, `[Tuning]` and the like are dropped entire, which removes the
-fingering diagrams and their explanatory prose in one move.
+**Structure.** The song starts at the first section header. UG brackets those
+(`[Verse 1]`); GuitarTuna writes them bare (`Verse 1`), so bare headers are
+matched against a fixed vocabulary of section names and normalised into
+brackets, leaving the output with one section syntax whatever the source used.
+Sections named `[Chords]`, `[Tuning]` and the like are dropped entire, which
+removes the fingering diagrams and their explanatory prose in one move.
+
+## Placing the chords
+
+Columns come from x positions, so the grid the chords were laid out on has to
+match the one the lyrics were. UG sets both rows in the same monospace face and
+they share a grid. GuitarTuna sets lyrics in Inconsolata and chords in a
+proportional UI face on a grid of its own -- about 1% narrower, indented half a
+character -- which walks a chord a full column left of its syllable by the
+right-hand edge of the page. So when the two rows are in different faces the
+chord grid is measured off the chord rows themselves: the pitch from the gaps
+between chords on a row, the origin from the leftmost chord in the song.
+
+That face also spends half a column extra on every character past the first, so
+one `Am` leaves the rest of its row half a column right of where it belongs.
+That slip is measured too, and only applied to a document whose chords actually
+show it.
 
 ## Limits
 
-- Tuned against Ultimate Guitar's PDF export. Another site's furniture needs
-  its own entries in `JUNK_PHRASES` and `JUNK_WORDS`.
+- Tuned against Ultimate Guitar's and GuitarTuna's PDF exports. Another site's
+  furniture needs its own entries in `JUNK_PHRASES` and `JUNK_WORDS`, and a
+  section vocabulary it doesn't use needs adding to `PLAIN_SECTION_RE`.
 - Chord detection is a regex (`CHORD_RE`). Unusual spellings may fall through
   to lyrics; `--debug` shows you.
 - A chord line made entirely of words that are also English (`A`, `Am`, `Add`)
